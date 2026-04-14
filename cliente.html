@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DropSport - Alquiler de Equipos Deportivos</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ===== CLIENT ECOMMERCE STYLES ===== */
+    .client-shell { display: flex; flex-direction: column; min-height: 100vh; }
+    .client-topbar {
+      background: var(--card); border-bottom: 1px solid var(--muted-border);
+      padding: 12px 0; position: sticky; top: 0; z-index: 100;
+    }
+    .client-topbar-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    .client-brand { font-weight: 800; font-size: 1.4rem; color: var(--primary); display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .client-search-box {
+      flex: 1; max-width: 400px; position: relative;
+    }
+    .client-search-box input {
+      width: 100%; padding: 10px 14px 10px 38px; border-radius: 50px;
+      border: 2px solid var(--muted-border); background: var(--bg); color: var(--text);
+      font-size: 0.95rem; transition: border-color .2s;
+    }
+    .client-search-box input:focus { border-color: var(--primary); outline: none; }
+    .client-search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .client-topbar-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+    .client-user-chip { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text); }
+    .client-user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+
+    .client-nav {
+      background: var(--card); border-bottom: 1px solid var(--muted-border); overflow-x: auto;
+    }
+    .client-nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      display: flex; gap: 4px;
+    }
+    .client-nav-btn {
+      padding: 12px 20px; font-weight: 600; font-size: 0.9rem; color: var(--muted);
+      border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent;
+      transition: all .2s; white-space: nowrap;
+    }
+    .client-nav-btn:hover { color: var(--text); }
+    .client-nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .client-nav-btn i { margin-right: 6px; }
+
+    .client-main { flex: 1; max-width: 1200px; margin: 0 auto; padding: 24px; width: 100%; }
+
+    /* Hero */
+    .client-hero {
+      background: linear-gradient(135deg, var(--primary), var(--accent, #e8590c));
+      border-radius: var(--radius); padding: 40px 36px; color: #fff; margin-bottom: 28px;
+      position: relative; overflow: hidden;
+    }
+    .client-hero h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+    .client-hero p { font-size: 1.05rem; opacity: .9; max-width: 500px; }
+    .client-hero-icon { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 5rem; opacity: .15; }
+
+    /* Product grid */
+    .product-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;
+    }
+    .product-card {
+      background: var(--card); border-radius: var(--radius); border: 1px solid var(--muted-border);
+      overflow: hidden; transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column;
+    }
+    .product-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+    .product-card-img {
+      height: 180px; background: var(--bg); display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative;
+    }
+    .product-card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .product-card-img .placeholder-icon { font-size: 3rem; color: var(--muted); }
+    .product-card-status {
+      position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 50px;
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    }
+    .product-card-status.disponible { background: #d4edda; color: #155724; }
+    .product-card-status.alquilado { background: #fff3cd; color: #856404; }
+    .product-card-status.mantenimiento { background: #f8d7da; color: #721c24; }
+    .product-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+    .product-card-name { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+    .product-card-cat { font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
+    .product-card-cat i { margin-right: 4px; }
+    .product-card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .product-card-price { font-weight: 800; font-size: 1.1rem; color: var(--primary); }
+    .product-card-price small { font-weight: 400; font-size: 0.75rem; color: var(--muted); }
+    .product-card-actions { margin-top: auto; }
+    .product-card-actions .btn { width: 100%; justify-content: center; }
+    .btn-rent { background: var(--primary); color: #fff; }
+    .btn-rent:hover { filter: brightness(1.1); }
+    .btn-unavailable { background: var(--muted-border); color: var(--muted); cursor: not-allowed; }
+
+    /* Categories bar */
+    .client-categories { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .cat-chip {
+      padding: 8px 16px; border-radius: 50px; border: 2px solid var(--muted-border);
+      background: var(--card); font-weight: 600; font-size: 0.85rem; cursor: pointer;
+      transition: all .2s; color: var(--text);
+    }
+    .cat-chip:hover { border-color: var(--primary); }
+    .cat-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .cat-chip i { margin-right: 5px; }
+
+    /* My rentals */
+    .rental-list { display: flex; flex-direction: column; gap: 12px; }
+    .rental-card {
+      background: var(--card); border: 1px solid var(--muted-border); border-radius: var(--radius);
+      padding: 18px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .rental-card-info { flex: 1; min-width: 200px; }
+    .rental-card-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    .rental-card-detail { font-size: 0.85rem; color: var(--muted); }
+    .rental-card-detail i { margin-right: 4px; width: 16px; text-align: center; }
+    .rental-card-status { flex-shrink: 0; }
+
+    /* Ticket list for user */
+    .user-ticket-list { display: flex; flex-direction: column; gap: 12px; }
+    .user-ticket-card {
+      background: var(--card); border: 1px solid var(--muted-border); border-radius: var(--radius);
+      padding: 18px 20px; border-left: 4px solid var(--primary);
+    }
+    .user-ticket-card.status-abierto { border-left-color: #e8590c; }
+    .user-ticket-card.status-en_proceso { border-left-color: var(--primary); }
+    .user-ticket-card.status-cerrado { border-left-color: #2ea043; }
+    .user-ticket-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .user-ticket-header .ticket-id { font-weight: 700; color: var(--muted); }
+
+    /* Stats summary */
+    .client-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .client-stat-card {
+      background: var(--card); border: 1px solid var(--muted-border); border-radius: var(--radius);
+      padding: 18px; text-align: center;
+    }
+    .client-stat-card .stat-number { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+    .client-stat-card .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    .empty-msg { text-align: center; padding: 40px; color: var(--muted); }
+    .empty-msg i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+
+    /* Rental modal */
+    .client-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 500; display: flex; align-items: center; justify-content: center; }
+    .client-modal-overlay.hidden { display: none; }
+    .client-modal {
+      background: var(--card); border-radius: var(--radius); width: 90%; max-width: 460px;
+      padding: 28px; position: relative; max-height: 90vh; overflow-y: auto;
+    }
+    .client-modal h3 { margin-bottom: 20px; }
+    .client-modal .form-group { margin-bottom: 14px; }
+    .client-modal .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+    .client-modal .form-group input,
+    .client-modal .form-group select,
+    .client-modal .form-group textarea {
+      width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+      border: 2px solid var(--muted-border); background: var(--bg); color: var(--text);
+      font-family: inherit; font-size: 0.95rem;
+    }
+    .client-modal .form-group input:focus,
+    .client-modal .form-group select:focus,
+    .client-modal .form-group textarea:focus { border-color: var(--primary); outline: none; }
+    .client-modal .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+    .client-modal .modal-actions .btn { flex: 1; justify-content: center; }
+    .client-modal-close { position: absolute; top: 14px; right: 14px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); }
+
+    @media(max-width:768px){
+      .client-topbar-inner { flex-wrap: wrap; }
+      .client-search-box { max-width: 100%; order: 3; flex-basis: 100%; }
+      .product-grid { grid-template-columns: 1fr 1fr; }
+      .client-hero { padding: 28px 20px; }
+      .client-hero h1 { font-size: 1.3rem; }
+      .client-hero-icon { display: none; }
+    }
+    @media(max-width:480px){
+      .product-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="client-shell" id="clientShell">
+    <!-- Top bar -->
+    <div class="client-topbar">
+      <div class="client-topbar-inner">
+        <a class="client-brand" href="/cliente.html"><span>⚽</span> DropSport</a>
+        <div class="client-search-box">
+          <i class="fa-solid fa-search"></i>
+          <input id="clientSearch" type="text" placeholder="Buscar equipos deportivos...">
+        </div>
+        <div class="client-topbar-actions">
+          <button id="clientTheme" class="btn small plain" title="Tema"><i class="fa-solid fa-moon"></i></button>
+          <div class="client-user-chip">
+            <div class="client-user-avatar" id="userAvatar">U</div>
+            <span id="userName">Usuario</span>
+          </div>
+          <button id="clientLogout" class="btn small outline" title="Salir"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="client-nav">
+      <div class="client-nav-inner">
+        <button class="client-nav-btn active" data-view="catalog"><i class="fa-solid fa-store"></i> Catálogo</button>
+        <button class="client-nav-btn" data-view="myrentals"><i class="fa-solid fa-hand-holding-heart"></i> Mis Alquileres</button>
+        <button class="client-nav-btn" data-view="mytickets"><i class="fa-solid fa-ticket"></i> Mis Tickets</button>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="client-main">
+      <!-- CATALOG VIEW -->
+      <div id="catalogView">
+        <div class="client-hero">
+          <h1><i class="fa-solid fa-futbol"></i> Alquiler de Equipos Deportivos</h1>
+          <p>Encuentra los mejores equipos para tus actividades deportivas. Alquila fácil, rápido y seguro.</p>
+          <div class="client-hero-icon"><i class="fa-solid fa-medal"></i></div>
+        </div>
+
+        <div class="client-categories" id="catFilters"></div>
+        <div class="product-grid" id="productGrid"></div>
+      </div>
+
+      <!-- MY RENTALS VIEW -->
+      <div id="myRentalsView" class="hidden">
+        <h2 style="margin-bottom:20px"><i class="fa-solid fa-hand-holding-heart"></i> Mis Alquileres</h2>
+        <div class="client-stats" id="rentalStats"></div>
+        <div class="rental-list" id="rentalList"></div>
+      </div>
+
+      <!-- MY TICKETS VIEW -->
+      <div id="myTicketsView" class="hidden">
+        <h2 style="margin-bottom:20px"><i class="fa-solid fa-ticket"></i> Mis Tickets</h2>
+        <div class="client-stats" id="ticketStats"></div>
+        <div class="user-ticket-list" id="userTicketList"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer" style="margin-top:auto">
+      <div class="footer-grid">
+        <div>
+          <strong><i class="fa-solid fa-futbol"></i> DropSport</strong>
+          <p>Gestión y alquiler de equipos deportivos.</p>
+        </div>
+        <div class="footer-links">
+          <a href="#">Contacto</a>
+          <a href="#">Términos</a>
+          <a href="#">Ayuda</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Rental Modal -->
+  <div class="client-modal-overlay hidden" id="clientModal">
+    <div class="client-modal">
+      <button class="client-modal-close" id="clientModalClose"><i class="fa-solid fa-xmark"></i></button>
+      <div id="clientModalBody"></div>
+    </div>
+  </div>
+
+  <script src="cliente.js"></script>
+</body>
+</html>

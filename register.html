@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registrarse - DropSport</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-grid">
+      <a class="brand" href="/">
+        <span class="brand-icon">&#9917;</span> DropSport
+      </a>
+      <nav class="nav">
+        <a href="login.html" class="btn small">Iniciar sesion</a>
+        <button id="toggleTheme" class="btn small plain" aria-label="Cambiar tema">&#127769;</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="container">
+      <div class="auth-area">
+        <div class="card auth-card">
+          <h3><i class="fa-solid fa-user-plus"></i> Registrar nuevo usuario</h3>
+          <form onsubmit="return false">
+            <label><i class="fa-solid fa-user"></i> Nombre<input id="regName" placeholder="Tu nombre completo" required></label>
+            <label><i class="fa-solid fa-envelope"></i> Correo<input id="regEmail" type="email" placeholder="tucorreo@ejemplo.com" required></label>
+            <label><i class="fa-solid fa-lock"></i> Contrasena<input id="regPass" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required></label>
+            <label><i class="fa-solid fa-lock"></i> Confirmar contrasena<input id="regPass2" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required></label>
+            <label><i class="fa-solid fa-id-badge"></i> Rol
+              <select id="regRole">
+                <option value="cliente">&#128100; Cliente</option>
+                <option value="empleado">&#128119; Empleado</option>
+                <option value="administrador">&#128737; Administrador</option>
+              </select>
+            </label>
+            <div class="row" style="margin-top:16px">
+              <button id="doRegister" type="button" class="btn"><i class="fa-solid fa-check"></i> Registrar</button>
+              <a href="login.html" class="btn outline"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+            </div>
+            <div id="registerError" class="form-error"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <strong><i class="fa-solid fa-futbol"></i> DropSport</strong>
+        <p>Gestion y alquiler de equipos deportivos.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">Contacto</a>
+        <a href="#">Terminos</a>
+        <a href="#">Ayuda</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

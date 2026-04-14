@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DropSport — Gestion de inventarios deportivos</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="light">
+  <header class="site-header">
+    <div class="container header-grid">
+      <a class="brand" href="/">
+        <span class="brand-icon">&#9917;</span> DropSport
+      </a>
+      <nav class="nav">
+        <a href="login.html" class="btn small">Iniciar sesion</a>
+        <a href="register.html" class="btn small outline">Registrarse</a>
+        <button id="toggleTheme" class="btn small plain" aria-label="Cambiar tema">&#127769; Modo oscuro</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="landing" class="hero-extreme">
+      <div class="hero-overlay"></div>
+      <div class="hero-inner">
+        <div class="hero-text">
+          <h2><i class="fa-solid fa-futbol"></i> Bienvenido a DropSport</h2>
+          <p class="lead">Gestiona el inventario, prestamos y mantenimientos de tus articulos deportivos con rapidez y estilo profesional.</p>
+          <ul class="hero-features">
+            <li><i class="fa-solid fa-bolt"></i> Reservas rapidas</li>
+            <li><i class="fa-solid fa-chart-line"></i> Reportes en vivo</li>
+            <li><i class="fa-solid fa-shield-halved"></i> Roles y seguridad</li>
+          </ul>
+          <div class="cta">
+            <a href="login.html" id="ctaLogin" class="btn large"><i class="fa-solid fa-right-to-bracket"></i> Entrar al sistema</a>
+            <a href="register.html" id="ctaRegister" class="btn large outline"><i class="fa-solid fa-user-plus"></i> Crear cuenta</a>
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="sports-grid">
+            <div class="sport-ball">&#9917;</div>
+            <div class="sport-ball">&#127936;</div>
+            <div class="sport-ball">&#127934;</div>
+            <div class="sport-ball">&#127952;</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container features-section">
+      <h3><i class="fa-solid fa-sparkles"></i> Caracteristicas para tu equipo</h3>
+      <div class="feature-grid">
+        <div class="card feature-card">
+          <div class="feature-icon">&#128230;</div>
+          <h4>Inventario Inteligente</h4>
+          <p>Gestiona todos tus articulos: balones, raquetas, bicicletas y mas con estado en tiempo real.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">&#128197;</div>
+          <h4>Reservas sin estres</h4>
+          <p>Control de prestamos por fechas y disponibilidad al instante para tu organizacion.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">&#128295;</div>
+          <h4>Mantenimiento Preventivo</h4>
+          <p>Registro de revisiones y estado de conservacion garantizado para cada articulo.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">&#128202;</div>
+          <h4>Reportes en Vivo</h4>
+          <p>Estadisticas, graficos de uso y analisis de disponibilidad de equipos.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">&#128101;</div>
+          <h4>Multi-rol seguro</h4>
+          <p>Permisos por rol: cliente, empleado y administrador con controles de acceso.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="feature-icon">&#9889;</div>
+          <h4>Ultra Rapido</h4>
+          <p>Interfaz optimizada, busqueda instantanea y operaciones en menos de 1 segundo.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sports-showcase">
+      <div class="container">
+        <h3><i class="fa-solid fa-trophy"></i> Equipos que gestionamos</h3>
+        <div class="sports-carousel">
+          <div class="sport-item"><div class="sport-icon">&#9917;</div><p>Futbol</p></div>
+          <div class="sport-item"><div class="sport-icon">&#127936;</div><p>Basketball</p></div>
+          <div class="sport-item"><div class="sport-icon">&#127934;</div><p>Tenis</p></div>
+          <div class="sport-item"><div class="sport-icon">&#127952;</div><p>Voley</p></div>
+          <div class="sport-item"><div class="sport-icon">&#128692;</div><p>Ciclismo</p></div>
+          <div class="sport-item"><div class="sport-icon">&#9971;</div><p>Golf</p></div>
+          <div class="sport-item"><div class="sport-icon">&#127946;</div><p>Natacion</p></div>
+          <div class="sport-item"><div class="sport-icon">&#129336;</div><p>Gimnasia</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <strong><i class="fa-solid fa-futbol"></i> DropSport</strong>
+        <p>Gestion y alquiler de equipos deportivos.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">Contacto</a>
+        <a href="#">Terminos y condiciones</a>
+        <a href="#">Ayuda</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

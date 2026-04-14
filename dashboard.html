@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - DropSport</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-grid">
+      <a class="brand" href="/">
+        <span class="brand-icon">&#9917;</span> DropSport
+      </a>
+      <nav class="nav">
+        <button id="toggleTheme" class="btn small plain" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i> Modo oscuro</button>
+        <a id="logout" class="btn small outline"><i class="fa-solid fa-right-from-bracket"></i> Salir</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="container dashboard-grid">
+      <aside class="panel">
+        <h4><i class="fa-solid fa-user-circle"></i> Usuario</h4>
+        <div id="userInfo">-</div>
+        <nav class="side-nav">
+          <button id="navInventory" class="btn small plain"><i class="fa-solid fa-boxes-stacked"></i> Inventario</button>
+          <button id="navManage" class="btn small plain"><i class="fa-solid fa-sliders"></i> Gestionar productos</button>
+          <button id="navLoans" class="btn small plain"><i class="fa-solid fa-hand-holding"></i> Alquileres</button>
+          <button id="navTickets" class="btn small plain"><i class="fa-solid fa-file-lines"></i> Reportes</button>
+          <button id="navReports" class="btn small plain"><i class="fa-solid fa-chart-pie"></i> Estadísticas</button>
+        </nav>
+      </aside>
+
+      <section class="panel main-panel">
+        <!-- INVENTARIO -->
+        <div id="inventoryView">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-boxes-stacked"></i> Inventario</h3>
+            <button id="addItemBtn" class="btn small"><i class="fa-solid fa-plus"></i> Anadir articulo</button>
+          </div>
+          <div class="inventory-tools">
+            <input id="inventorySearch" type="text" placeholder="Buscar en inventario..." class="inventory-search-input">
+          </div>
+          <div class="category-filters">
+            <button class="category-btn active" data-category="todos"><i class="fa-solid fa-layer-group"></i> Todos</button>
+            <button class="category-btn" data-category="balones"><i class="fa-solid fa-futbol"></i> Balones</button>
+            <button class="category-btn" data-category="vestimenta"><i class="fa-solid fa-shirt"></i> Vestimenta</button>
+            <button class="category-btn" data-category="herramientas"><i class="fa-solid fa-wrench"></i> Herramientas</button>
+            <button class="category-btn" data-category="cancha"><i class="fa-solid fa-road"></i> Cancha</button>
+          </div>
+          <div id="inventoryList" class="list"></div>
+        </div>
+
+        <!-- GESTIONAR PRODUCTOS -->
+        <div id="manageView" class="hidden">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-sliders"></i> Gestionar productos</h3>
+          </div>
+          <div class="manage-report card">
+            <div class="manage-report-top">
+              <div>
+                <strong><i class="fa-solid fa-chart-bar"></i> Informe general</strong>
+                <div class="manage-report-label">Total de productos registrados</div>
+              </div>
+              <div id="manageTotalProducts" class="manage-report-value">0</div>
+            </div>
+            <div class="manage-report-stats">
+              <div class="manage-mini-stat">
+                <span><i class="fa-solid fa-circle-check"></i> Disponibles</span>
+                <strong id="manageAvailableProducts">0</strong>
+              </div>
+              <div class="manage-mini-stat">
+                <span><i class="fa-solid fa-circle-xmark"></i> No disponibles</span>
+                <strong id="manageUnavailableProducts">0</strong>
+              </div>
+              <div class="manage-mini-stat">
+                <span><i class="fa-solid fa-wrench"></i> Mantenimiento</span>
+                <strong id="manageMaintenanceProducts">0</strong>
+              </div>
+            </div>
+            <div class="manage-type-counters">
+              <span class="manage-type-chip"><i class="fa-solid fa-futbol"></i> Balones: <strong id="manageTypeBalones">0</strong></span>
+              <span class="manage-type-chip"><i class="fa-solid fa-shirt"></i> Vestimenta: <strong id="manageTypeVestimenta">0</strong></span>
+              <span class="manage-type-chip"><i class="fa-solid fa-wrench"></i> Herramientas: <strong id="manageTypeHerramientas">0</strong></span>
+              <span class="manage-type-chip"><i class="fa-solid fa-road"></i> Cancha: <strong id="manageTypeCancha">0</strong></span>
+            </div>
+            <div class="manage-price-global">
+              <label><strong><i class="fa-solid fa-filter"></i> Aplicacion masiva por seleccion</strong></label>
+              <div class="manage-price-global-actions">
+                <select id="manageBulkType" class="manage-type-select" aria-label="Filtrar por tipo">
+                  <option value="todos">Todos los tipos</option>
+                  <option value="balones">Balones</option>
+                  <option value="vestimenta">Vestimenta</option>
+                  <option value="herramientas">Herramientas</option>
+                  <option value="cancha">Cancha</option>
+                </select>
+                <select id="manageBulkName" class="manage-type-select" aria-label="Filtrar por nombre">
+                  <option value="todos">Todos los nombres</option>
+                </select>
+              </div>
+              <label for="manageGlobalPrice"><strong><i class="fa-solid fa-money-bill-wave"></i> Precio unico (COP)</strong></label>
+              <div class="manage-price-global-actions">
+                <input id="manageGlobalPrice" type="number" min="0" step="1" value="10000" class="manage-price-input" aria-label="Precio global">
+                <button id="manageApplyAllPrice" class="btn small"><i class="fa-solid fa-check"></i> Aplicar precio</button>
+              </div>
+              <label for="manageBulkNewName"><strong><i class="fa-solid fa-pen"></i> Renombrar seleccionados</strong></label>
+              <div class="manage-price-global-actions">
+                <input id="manageBulkNewName" type="text" placeholder="Nuevo nombre" class="manage-search-input" aria-label="Nuevo nombre">
+                <button id="manageApplyBulkName" class="btn small outline"><i class="fa-solid fa-check"></i> Aplicar nombre</button>
+              </div>
+            </div>
+          </div>
+          <div class="category-filters manage-tools">
+            <input id="manageSearch" type="text" placeholder="Buscar por nombre..." class="manage-search-input">
+            <select id="manageType" class="manage-type-select">
+              <option value="todos">Todos los tipos</option>
+              <option value="balones">Balones</option>
+              <option value="vestimenta">Vestimenta</option>
+              <option value="herramientas">Herramientas</option>
+              <option value="cancha">Cancha</option>
+            </select>
+          </div>
+          <div id="manageList" class="list column"></div>
+        </div>
+
+        <!-- ALQUILERES -->
+        <div id="loansView" class="hidden">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-hand-holding"></i> Alquileres activos</h3>
+          </div>
+          <div id="loansList" class="list column"></div>
+        </div>
+
+        <!-- TICKETS -->
+        <div id="ticketsView" class="hidden">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-file-lines"></i> Reportes</h3>
+            <div class="ticket-header-actions">
+              <select id="ticketFilter" class="manage-type-select">
+                <option value="todos">Todos</option>
+                <option value="abierto">Abiertos</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="cerrado">Cerrados</option>
+              </select>
+              <button id="newTicketBtn" class="btn small"><i class="fa-solid fa-plus"></i> Nuevo reporte</button>
+            </div>
+          </div>
+          <div class="ticket-stats-row">
+            <div class="ticket-stat"><i class="fa-solid fa-folder-open"></i> Abiertos: <strong id="ticketsOpen">0</strong></div>
+            <div class="ticket-stat"><i class="fa-solid fa-spinner"></i> En proceso: <strong id="ticketsInProgress">0</strong></div>
+            <div class="ticket-stat"><i class="fa-solid fa-circle-check"></i> Cerrados: <strong id="ticketsClosed">0</strong></div>
+          </div>
+          <div id="ticketsList" class="list column"></div>
+        </div>
+
+        <!-- ESTADÍSTICAS -->
+        <div id="reportsView" class="hidden">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-chart-pie"></i> Estadísticas de Inventario</h3>
+          </div>
+          <div class="reports-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="totalItems">0</div>
+              <div class="stat-label"><i class="fa-solid fa-boxes-stacked"></i> Total en Inventario</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="availableItems">0</div>
+              <div class="stat-label"><i class="fa-solid fa-circle-check"></i> Disponibles</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="rentedItems">0</div>
+              <div class="stat-label"><i class="fa-solid fa-truck"></i> Alquilados</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="maintenanceItems">0</div>
+              <div class="stat-label"><i class="fa-solid fa-wrench"></i> Mantenimiento</div>
+            </div>
+          </div>
+          <div class="reports-charts-grid">
+            <div class="reports-chart-card">
+              <h4><i class="fa-solid fa-chart-pie"></i> Estado del Inventario</h4>
+              <canvas id="chartStatus" height="180"></canvas>
+            </div>
+            <div class="reports-chart-card">
+              <h4><i class="fa-solid fa-gauge-high"></i> Tasa de Ocupacion</h4>
+              <canvas id="chartOccupancy" height="180"></canvas>
+            </div>
+          </div>
+          <div class="reports-chart-full">
+            <h4><i class="fa-solid fa-chart-bar"></i> Productos por Articulo</h4>
+            <canvas id="chartTop" height="100"></canvas>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <strong><i class="fa-solid fa-futbol"></i> DropSport</strong>
+        <p>Gestion y alquiler de equipos deportivos.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">Contacto</a>
+        <a href="#">Terminos</a>
+        <a href="#">Ayuda</a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-content card">
+      <button id="modalClose" class="modal-close" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+
+
+  <script src="app.js"></script>
+</body>
+</html>
