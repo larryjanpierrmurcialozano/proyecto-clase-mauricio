@@ -16,19 +16,30 @@ Funcionalidades principales:
 
 Estructura del proyecto:
 ```
-├── server.py          # Backend Flask (API REST + modelos SQLAlchemy)
-├── app.js             # Frontend JavaScript (lógica de UI)
-├── styles.css         # Estilos CSS
-├── dashboard.html     # Panel principal de administración
-├── index.html         # Página de inicio (landing page)
-├── login.html         # Inicio de sesión
-├── register.html      # Registro de usuarios
-├── requirements.txt   # Dependencias Python
-├── migrate_sqlite_to_mysql.py  # Migracion SQLite -> MySQL
-├── README.md          # Este archivo
-├── INSTALL.md         # Guía de instalación y despliegue en Linux
-├── app.db             # Base de datos SQLite (opcional en desarrollo)
-└── uploads/           # Imágenes subidas
+├── backend/
+│   ├── server.py          # Backend Flask (API REST + modelos SQLAlchemy)
+│   ├── requirements.txt   # Dependencias Python
+│   ├── check_db.py         # Verifica tablas/columnas
+│   ├── fix_db.py           # Inicializa/actualiza BD
+│   ├── migrate_sqlite_to_mysql.py  # Migracion SQLite -> MySQL
+│   └── app.db              # SQLite (opcional en desarrollo)
+├── frontend/
+│   ├── index.html          # Página de inicio (landing page)
+│   ├── login.html          # Inicio de sesión
+│   ├── register.html       # Registro de usuarios
+│   ├── dashboard.html      # Panel principal de administración
+│   ├── cliente.html        # Vista cliente
+│   ├── app.js              # Lógica admin
+│   ├── cliente.js          # Lógica cliente
+│   ├── styles.css          # Estilos CSS
+│   └── logo.svg
+├── docs/
+│   ├── README.md           # Este archivo
+│   ├── INSTALL.md          # Guía de instalación y despliegue en Linux
+│   ├── db.md
+│   ├── dumb.sql
+│   └── usuarios de prueba.md
+└── uploads/                # Imágenes subidas
 ```
 
 Ejecución rápida:
@@ -43,26 +54,26 @@ source venv/bin/activate
 
 2. Instalar dependencias:
 ```bash
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 3. Ejecutar el servidor:
 ```bash
-python server.py
+python backend/server.py
 ```
 
 4. Abrir `http://127.0.0.1:5000` en el navegador.
 
-Para despliegue en Linux: ver `INSTALL.md`
+Para despliegue en Linux: ver `docs/INSTALL.md`
 
 Base de datos y credenciales iniciales:
-- Se usa MySQL si se define `DATABASE_URL` o `DB_DRIVER=mysql`. Si no se define, usa SQLite (`app.db`).
+- El servidor usa MySQL por defecto (con `DB_DRIVER=mysql`) y toma SQLite (`backend/app.db`) solo si cambias `DB_DRIVER=sqlite`.
 - Usuario administrador por defecto:
 	- Email: `larryjanpier@gmail.com`
 	- Contraseña: `123456`
 en caso de que sea error, pues simplemente, cree un nuevo usuario administrador, o configura cambiando la contrasela de ese gmail y yap
 Configuracion MySQL (recomendado):
-- Crear la base de datos en MySQL (ej: `dropsport`).
+- Crear la base de datos en MySQL (ej: `mauricio`).
 - Definir variables de entorno antes de iniciar el servidor.
 
 Ejemplo (PowerShell):
@@ -73,13 +84,13 @@ $env:MYSQL_PORT = "3306"
 $env:MYSQL_DB = "mauricio"
 $env:MYSQL_USER = "root"
 $env:MYSQL_PASSWORD = "tu_contrasena"
-python server.py
+python backend/server.py
 ```
 
 Ejemplo con URL completa:
 ```powershell
 $env:DATABASE_URL = "mysql+pymysql://root:tu_contrasena@127.0.0.1:3306/mauricio?charset=utf8mb4"
-python server.py
+python backend/server.py
 ```
 
 Migracion desde SQLite a MySQL:
@@ -93,15 +104,15 @@ $env:MYSQL_PORT = "3306"
 $env:MYSQL_DB = "mauricio"
 $env:MYSQL_USER = "root"
 $env:MYSQL_PASSWORD = "tu_contrasena"
-$env:SQLITE_PATH = "app.db"
+$env:SQLITE_PATH = "backend/app.db"
 $env:SKIP_SEED = "1"
-python migrate_sqlite_to_mysql.py
+python backend/migrate_sqlite_to_mysql.py
 ```
 
 Si la base de datos MySQL ya tiene datos y deseas sobrescribir:
 ```powershell
 $env:MIGRATE_FORCE = "1"
-python migrate_sqlite_to_mysql.py
+python backend/migrate_sqlite_to_mysql.py
 ```
 
 API (endpoints principales):

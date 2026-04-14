@@ -30,7 +30,7 @@ Crear base de datos y usuario (ejemplo):
 sudo mysql
 CREATE DATABASE mauricio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'dropsport'@'localhost' IDENTIFIED BY 'tu_contrasena';
-GRANT ALL PRIVILEGES ON mauricio TO 'dropsport'@'localhost';
+GRANT ALL PRIVILEGES ON mauricio.* TO 'dropsport'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -58,13 +58,13 @@ source venv/bin/activate
 
 ```bash
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 ## 6. Verificar que funciona
 
 ```bash
-python server.py
+python backend/server.py
 ```
 
 Debería mostrar:
@@ -85,7 +85,7 @@ pip install gunicorn
 ### Ejecutar con Gunicorn
 
 ```bash
-gunicorn --bind 0.0.0.0:5000 --workers 3 server:app
+gunicorn --bind 0.0.0.0:5000 --workers 3 backend.server:app
 ```
 
 ### Crear servicio systemd (arranque automático)
@@ -113,7 +113,7 @@ Environment="MYSQL_PORT=3306"
 Environment="MYSQL_DB=mauricio"
 Environment="MYSQL_USER=dropsport"
 Environment="MYSQL_PASSWORD=tu_contrasena"
-ExecStart=/opt/dropsport/venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 3 server:app
+ExecStart=/opt/dropsport/venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 3 backend.server:app
 Restart=always
 RestartSec=5
 
@@ -189,18 +189,20 @@ sudo chmod 775 /opt/dropsport/uploads
 
 ```
 dropsport/
-├── server.py          # Servidor Flask (API REST + modelos de BD)
-├── app.js             # Frontend JavaScript (lógica de la UI)
-├── styles.css         # Estilos CSS del sistema
-├── dashboard.html     # Panel de administración
-├── index.html         # Página de inicio (landing)
-├── login.html         # Página de inicio de sesión
-├── register.html      # Página de registro de usuarios
-├── requirements.txt   # Dependencias de Python
-├── README.md          # Documentación del proyecto
-├── INSTALL.md         # Esta guía de instalación
-├── app.db             # Base de datos SQLite (opcional)
-└── uploads/           # Imágenes subidas por los usuarios
+├── backend/
+│   ├── server.py          # Servidor Flask (API REST + modelos de BD)
+│   ├── requirements.txt   # Dependencias de Python
+│   └── app.db             # Base de datos SQLite (opcional)
+├── frontend/
+│   ├── index.html         # Página de inicio (landing)
+│   ├── login.html         # Página de inicio de sesión
+│   ├── register.html      # Página de registro de usuarios
+│   ├── dashboard.html     # Panel de administración
+│   └── styles.css         # Estilos del sistema
+├── docs/
+│   ├── README.md          # Documentación del proyecto
+│   └── INSTALL.md         # Esta guía de instalación
+└── uploads/               # Imágenes subidas por los usuarios
 ```
 
 ## Comandos Útiles
@@ -219,13 +221,13 @@ dropsport/
 - **Contraseña:** 3202964025
 - **Rol:** Administrador
 
-> **Importante:** Cambia las credenciales del administrador en producción editando la función `seed()` en `server.py` antes del primer arranque.
+> **Importante:** Cambia las credenciales del administrador en producción editando la función `seed()` en `backend/server.py` antes del primer arranque.
 
 ## Solución de Problemas
 
 | Problema | Solución |
 |----------|----------|
-| Puerto 5000 en uso | `sudo lsof -i :5000` y matar el proceso, o cambiar el puerto en `server.py` |
+| Puerto 5000 en uso | `sudo lsof -i :5000` y matar el proceso, o cambiar el puerto en `backend/server.py` |
 | Permisos denegados en uploads | `sudo chown -R www-data:www-data /opt/dropsport/uploads` |
 | Base de datos corrupta | Eliminar `app.db` y reiniciar (se recreará con datos demo) |
 | Módulo no encontrado | Verificar que el entorno virtual está activado: `source venv/bin/activate` |

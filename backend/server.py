@@ -12,7 +12,9 @@ from urllib.parse import quote_plus
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOADS_DIR = os.path.join(BASE_DIR, 'uploads')
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, os.pardir))
+FRONTEND_DIR = os.path.join(PROJECT_ROOT, 'frontend')
+UPLOADS_DIR = os.path.join(PROJECT_ROOT, 'uploads')
 if not os.path.exists(UPLOADS_DIR):
     os.makedirs(UPLOADS_DIR, exist_ok=True)
 DB_PATH = os.path.join(BASE_DIR, 'app.db')
@@ -45,7 +47,7 @@ def build_database_url():
     return 'sqlite:///' + DB_PATH
 
 
-app = Flask(__name__, static_folder='.')
+app = Flask(__name__, static_folder=FRONTEND_DIR)
 CORS(app)
 DB_URL = build_database_url()
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
@@ -281,13 +283,18 @@ def api_me():
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(FRONTEND_DIR, 'index.html')
 
 
 @app.route('/<path:pth>')
 def static_proxy(pth):
-    if os.path.exists(os.path.join(BASE_DIR, pth)):
-        return send_from_directory('.', pth)
+    if pth.startswith('uploads/'):
+        rel_path = pth.split('/', 1)[1]
+        fp = os.path.join(UPLOADS_DIR, rel_path)
+        if os.path.exists(fp):
+            return send_from_directory(UPLOADS_DIR, rel_path)
+    if os.path.exists(os.path.join(FRONTEND_DIR, pth)):
+        return send_from_directory(FRONTEND_DIR, pth)
     return ('Not Found', 404)
 
 

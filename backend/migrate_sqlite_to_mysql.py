@@ -5,6 +5,11 @@ from server import app, db, User, Item, Reservation, Ticket, Session, ensure_db
 from sqlalchemy import text
 
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
+DEFAULT_SQLITE_PATH = os.path.join(SCRIPT_DIR, 'app.db')
+
+
 def parse_dt(value):
     if value is None:
         return None
@@ -59,7 +64,11 @@ def clear_mysql_data():
 
 
 def main():
-    sqlite_path = os.getenv('SQLITE_PATH', 'app.db')
+    sqlite_path = os.getenv('SQLITE_PATH', DEFAULT_SQLITE_PATH)
+    if not os.path.exists(sqlite_path):
+        fallback = os.path.join(PROJECT_ROOT, 'app.db')
+        if os.path.exists(fallback):
+            sqlite_path = fallback
     force = os.getenv('MIGRATE_FORCE', '0') == '1'
 
     if not os.path.exists(sqlite_path):
