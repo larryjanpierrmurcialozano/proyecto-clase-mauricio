@@ -103,11 +103,11 @@ function resetRecoveryForm(){
 
 async function onRegister(e){
   e.preventDefault()
-  const name = $('regName').value.trim(), email=$('regEmail').value.trim(), pass=$('regPass').value, pass2=$('regPass2').value, role=$('regRole').value
+  const name = $('regName').value.trim(), email=$('regEmail').value.trim(), pass=$('regPass').value, pass2=$('regPass2').value
   const err = $('registerError'); err.textContent=''
   if(!name || !email || !pass){ err.textContent='Complete todos los campos.'; return }
   if(pass!==pass2){ err.textContent='Las contrase\u00f1as no coinciden.'; return }
-  const res = await api('/api/register','POST',{name, email, password: pass, role})
+  const res = await api('/api/register','POST',{name, email, password: pass})
   if(!res || !res.ok){ err.textContent = res? res.msg : 'Error de conexi\u00f3n'; return }
   alert('Registro exitoso.')
   location.href = 'login.html'
@@ -380,11 +380,62 @@ async function confirmLoan(itemId){
 
 function renderLoans(){
   const list = $('loansList'); if(!list) return; list.innerHTML=''
+  const rentalRequests = state.tickets.filter(t => t.ticket_type === 'alquiler' && t.status === 'abierto')
   const loanedItems = state.inventory.filter(i => i.status === 'alquilado')
 
-  if(loanedItems.length === 0){
-    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-hand-holding-heart"></i><p>No hay pr\u00e9stamos activos</p></div>'
+  if(rentalRequests.length === 0 && loanedItems.length === 0){
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-hand-holding-heart"></i><p>No hay solicitudes ni pr\u00e9stamos activos</p></div>'
     return
+  }
+
+  if(rentalRequests.length > 0){
+    const title = document.createElement('div')
+    title.className = 'loan-section-title'
+    title.textContent = 'Solicitudes de alquiler'
+    list.appendChild(title)
+
+    rentalRequests.forEach(ticket => {
+      const icon = getIcon(ticket.item_name || '')
+      const row = document.createElement('div')
+      row.className = 'loan-row'
+      const details = parseRentalDetails(ticket.description || '')
+      const item = state.inventory.find(i => i.id === ticket.item_id)
+      const requestPrice = item ? formatCOP(item.price || 10000) : ''
+
+      const detailHtml =
+        '<div class="loan-row-detail"><i class="fa-solid fa-user"></i> ' + (ticket.created_by || 'Cliente') + '</div>' +
+        (details.document ? '<div class="loan-row-detail"><i class="fa-solid fa-id-card"></i> ' + details.document + '</div>' : '') +
+        (details.phone ? '<div class="loan-row-detail"><i class="fa-solid fa-phone"></i> ' + details.phone + '</div>' : '') +
+        (details.start_date && details.end_date
+          ? '<div class="loan-row-detail"><i class="fa-solid fa-calendar"></i> ' + details.start_date + ' \u2192 ' + details.end_date + '</div>'
+          : '<div class="loan-row-detail"><i class="fa-solid fa-calendar"></i> Fechas pendientes</div>')
+
+      row.innerHTML =
+        '<div class="loan-row-info">' +
+          '<div class="loan-row-name"><i class="fa-solid ' + icon + '"></i> ' + (ticket.item_name || 'Producto') + '</div>' +
+          detailHtml +
+        '</div>' +
+        '<div class="loan-row-actions">' +
+          '<div class="loan-request-meta">' +
+            '<span class="loan-request-status"><i class="fa-solid fa-clock"></i> Pendiente</span>' +
+            (requestPrice ? '<span class="loan-request-price"><i class="fa-solid fa-money-bill-wave"></i> ' + requestPrice + '</span>' : '') +
+          '</div>' +
+          '<button class="btn small approve-rental-btn"><i class="fa-solid fa-check"></i> Aceptar</button>' +
+          '<button class="btn small outline reject-rental-btn"><i class="fa-solid fa-xmark"></i> Cancelar</button>' +
+          '<div class="loan-request-msg"></div>' +
+        '</div>'
+
+      row.querySelector('.approve-rental-btn').onclick = function(){ approveRentalRequest(ticket.id, row) }
+      row.querySelector('.reject-rental-btn').onclick = function(){ rejectRentalRequest(ticket.id, row) }
+      list.appendChild(row)
+    })
+  }
+
+  if(loanedItems.length > 0){
+    const title = document.createElement('div')
+    title.className = 'loan-section-title'
+    title.textContent = 'Alquileres activos'
+    list.appendChild(title)
   }
 
   loanedItems.forEach(item => {
@@ -395,16 +446,34 @@ function renderLoans(){
 
     var detailHtml = ''
     if(reservation){
+      const isDue = reservation.status === 'en_devolucion'
+      const dueDays = (typeof reservation.due_days === 'number') ? reservation.due_days : null
+      let dueText = ''
+      let dueClass = 'due-ok'
+      if(dueDays === 0){
+        dueText = 'Vence hoy'
+        dueClass = 'due-warning'
+      } else if(dueDays !== null && dueDays > 0){
+        dueText = 'Vence en ' + dueDays + ' dias'
+        if(dueDays <= 2) dueClass = 'due-warning'
+      } else if(dueDays !== null && dueDays < 0){
+        dueText = 'Vencido hace ' + Math.abs(dueDays) + ' dias'
+        dueClass = 'due-danger'
+      }
       detailHtml =
         '<div class="loan-row-detail"><i class="fa-solid fa-user"></i> ' + reservation.client + '</div>' +
         (reservation.document ? '<div class="loan-row-detail"><i class="fa-solid fa-id-card"></i> ' + reservation.document + '</div>' : '') +
         (reservation.phone ? '<div class="loan-row-detail"><i class="fa-solid fa-phone"></i> ' + reservation.phone + '</div>' : '') +
-        '<div class="loan-row-detail"><i class="fa-solid fa-calendar"></i> ' + reservation.start_date + ' &rarr; ' + reservation.end_date + '</div>'
+        '<div class="loan-row-detail"><i class="fa-solid fa-calendar"></i> ' + reservation.start_date + ' &rarr; ' + reservation.end_date + '</div>' +
+        '<div class="loan-row-detail"><i class="fa-solid fa-clock"></i> ' + (isDue ? 'En devolucion' : 'En curso') + '</div>' +
+        (dueText ? '<div class="loan-row-detail loan-due ' + dueClass + '"><i class="fa-solid fa-bell"></i> ' + dueText + '</div>' : '')
     } else {
       detailHtml = '<div class="loan-row-detail"><i class="fa-solid fa-info-circle"></i> Sin datos de reserva</div>'
     }
     var loanPrice = reservation ? reservation.price : (item.price || 10000)
 
+    const allowActions = reservation && reservation.status === 'en_devolucion'
+    const allowEarlyReturn = reservation && reservation.status !== 'en_devolucion'
     row.innerHTML =
       '<div class="loan-row-info">' +
         '<div class="loan-row-name"><i class="fa-solid ' + icon + '"></i> ' + item.name + '</div>' +
@@ -412,22 +481,84 @@ function renderLoans(){
         '<div class="loan-row-detail price-text"><i class="fa-solid fa-money-bill-wave"></i> ' + formatCOP(loanPrice) + '</div>' +
       '</div>' +
       '<div class="loan-row-actions">' +
-        '<button class="btn small return-loan-btn"><i class="fa-solid fa-file-lines"></i> Generar Reporte</button>' +
-        '<button class="btn small outline maint-loan-btn"><i class="fa-solid fa-wrench"></i> Mantenimiento</button>' +
+        (allowActions
+          ? '<button class="btn small return-loan-btn"><i class="fa-solid fa-file-lines"></i> Generar Reporte</button>' +
+            '<button class="btn small outline maint-loan-btn"><i class="fa-solid fa-wrench"></i> Mantenimiento</button>'
+          : (allowEarlyReturn
+              ? '<button class="btn small outline early-return-btn"><i class="fa-solid fa-rotate-left"></i> Devolucion anticipada</button>' +
+                '<span class="loan-actions-note"><i class="fa-solid fa-hourglass-half"></i> Esperando devolucion</span>'
+              : '<span class="loan-actions-note"><i class="fa-solid fa-hourglass-half"></i> Esperando devolucion</span>')) +
       '</div>'
-    row.querySelector('.return-loan-btn').onclick = function(){ returnItem(item.id) }
-    row.querySelector('.maint-loan-btn').onclick = function(){ markMaintenance(item.id) }
+    if(allowActions){
+      row.querySelector('.return-loan-btn').onclick = function(){ returnItem(item.id) }
+      row.querySelector('.maint-loan-btn').onclick = function(){ markMaintenance(item.id) }
+    }
+    if(!allowActions && allowEarlyReturn){
+      row.querySelector('.early-return-btn').onclick = function(){ returnItem(item.id, true) }
+    }
     list.appendChild(row)
   })
 }
 
-async function returnItem(itemId){
+function parseRentalDetails(description){
+  const details = { document: '', phone: '', start_date: '', end_date: '' }
+  if(!description) return details
+  const docMatch = description.match(/Doc:\s*([^|]+)/i)
+  if(docMatch) details.document = docMatch[1].trim()
+  const phoneMatch = description.match(/Tel:\s*([^|]+)/i)
+  if(phoneMatch) details.phone = phoneMatch[1].trim()
+  const datesMatch = description.match(/Fechas:\s*([^|]+)/i)
+  if(datesMatch){
+    const datesPart = datesMatch[1].trim()
+    const parts = datesPart.split(' a ')
+    if(parts.length === 2){
+      details.start_date = parts[0].trim()
+      details.end_date = parts[1].trim()
+    }
+  }
+  return details
+}
+
+function setLoanRequestMessage(row, message, type){
+  const msg = row ? row.querySelector('.loan-request-msg') : null
+  if(!msg) return
+  msg.textContent = message || ''
+  msg.classList.remove('success', 'error')
+  if(type === 'success' || type === 'error') msg.classList.add(type)
+}
+
+async function approveRentalRequest(ticketId, row){
+  if(!confirm('¿Aceptar solicitud de alquiler?')) return
+  const res = await api('/api/rental-approve/' + ticketId, 'POST')
+  if(res && res.ok){
+    await refreshData()
+    showView('loans')
+  } else {
+    const msg = res && res.msg ? res.msg : 'Error al aprobar solicitud'
+    setLoanRequestMessage(row, msg, 'error')
+  }
+}
+
+async function rejectRentalRequest(ticketId, row){
+  if(!confirm('¿Cancelar solicitud de alquiler?')) return
+  const res = await api('/api/rental-reject/' + ticketId, 'POST')
+  if(res && res.ok){
+    await refreshData()
+    showView('loans')
+  } else {
+    const msg = res && res.msg ? res.msg : 'Error al cancelar solicitud'
+    setLoanRequestMessage(row, msg, 'error')
+  }
+}
+
+async function returnItem(itemId, forceReturn){
   var item = state.inventory.find(function(i){ return i.id === itemId })
   if(!item) return
   var body = $('modalBody'); body.innerHTML=''
   var condLabel = item.condition || 'bueno'
+  var isForce = !!forceReturn
   body.innerHTML =
-    '<h3 style="margin-bottom:20px"><i class="fa-solid fa-file-lines"></i> Reporte de Devoluci\u00f3n: ' + item.name + '</h3>' +
+    '<h3 style="margin-bottom:20px"><i class="fa-solid fa-file-lines"></i> ' + (isForce ? 'Devolucion anticipada: ' : 'Reporte de Devolucion: ') + item.name + '</h3>' +
     '<div class="condition-info-box">' +
       '<i class="fa-solid fa-heart-pulse"></i> Estado al alquilar: <span class="condition-badge condition-' + condLabel + '">' + condLabel + '</span>' +
     '</div>' +
@@ -440,18 +571,27 @@ async function returnItem(itemId){
       '</select>' +
     '</div>' +
     '<div class="modal-form-group">' +
-      '<label><i class="fa-solid fa-clipboard"></i> Descripci\u00f3n del estado</label>' +
-      '<textarea id="returnDescription" rows="3" placeholder="Describa el estado del producto al ser devuelto..." style="width:100%;padding:11px 14px;border-radius:var(--radius-sm);border:2px solid var(--muted-border);background:var(--bg);color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical"></textarea>' +
+      '<label><i class="fa-solid fa-clipboard"></i> ' + (isForce ? 'Motivo de devolucion anticipada' : 'Descripcion del estado') + '</label>' +
+      '<textarea id="returnDescription" rows="3" placeholder="' + (isForce ? 'Explique por que se devuelve antes de tiempo...' : 'Describa el estado del producto al ser devuelto...') + '" style="width:100%;padding:11px 14px;border-radius:var(--radius-sm);border:2px solid var(--muted-border);background:var(--bg);color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical"></textarea>' +
     '</div>' +
     '<div style="display:flex;gap:8px;margin-top:20px">' +
-      '<button id="confirmReturn" class="btn" style="flex:1"><i class="fa-solid fa-check"></i> Generar Reporte y Devolver</button>' +
+      '<button id="confirmReturn" class="btn" style="flex:1"><i class="fa-solid fa-check"></i> ' + (isForce ? 'Confirmar devolucion' : 'Generar Reporte y Devolver') + '</button>' +
       '<button class="btn outline" onclick="closeModal()"><i class="fa-solid fa-xmark"></i> Cancelar</button>' +
     '</div>'
   show($('modal'))
   $('confirmReturn').onclick = async function(){
     var condition = $('returnCondition').value
     var description = ($('returnDescription').value || '').trim()
-    var res = await api('/api/return','POST',{itemId: itemId, condition: condition, description: description})
+    if(isForce && !description){
+      alert('Ingresa un motivo de devolucion anticipada')
+      return
+    }
+    var payload = {itemId: itemId, condition: condition, description: description}
+    if(isForce){
+      payload.force_return = true
+      payload.force_reason = description
+    }
+    var res = await api('/api/return','POST', payload)
     if(res && res.ok){ await refreshData(); closeModal() }
     else alert(res ? res.msg : 'Error al devolver')
   }
@@ -501,8 +641,7 @@ async function markMaintenance(itemId){
       await refreshData()
       closeModal()
       // Navigate to tickets view
-      state.current = 'tickets'
-      renderAll()
+      showView('tickets')
     } else {
       alert(res2 ? res2.msg : 'Error al crear reporte de mantenimiento')
     }

@@ -68,10 +68,11 @@ Para despliegue en Linux: ver `docs/INSTALL.md`
 
 Base de datos y credenciales iniciales:
 - El servidor usa MySQL por defecto (con `DB_DRIVER=mysql`) y toma SQLite (`backend/app.db`) solo si cambias `DB_DRIVER=sqlite`.
-- Usuario administrador por defecto:
-	- Email: `larryjanpier@gmail.com`
-	- Contraseña: `123456`
-en caso de que sea error, pues simplemente, cree un nuevo usuario administrador, o configura cambiando la contrasela de ese gmail y yap
+- El usuario administrador se crea solo si defines variables de entorno antes del primer arranque:
+	- `ADMIN_EMAIL`
+	- `ADMIN_PASSWORD`
+	- (opcional) `ADMIN_NAME`
+	Si no defines esas variables, no se crea admin automaticamente.
 Configuracion MySQL (recomendado):
 - Crear la base de datos en MySQL (ej: `mauricio`).
 - Definir variables de entorno antes de iniciar el servidor.
@@ -84,6 +85,9 @@ $env:MYSQL_PORT = "3306"
 $env:MYSQL_DB = "mauricio"
 $env:MYSQL_USER = "root"
 $env:MYSQL_PASSWORD = "tu_contrasena"
+$env:ADMIN_EMAIL = "admin@tuapp.com"
+$env:ADMIN_PASSWORD = "tu_clave_segura"
+$env:ADMIN_NAME = "Admin"
 python backend/server.py
 ```
 

@@ -215,13 +215,15 @@ dropsport/
 | Ver logs | `sudo journalctl -u dropsport -f` |
 | Ver estado | `sudo systemctl status dropsport` |
 
-## Credenciales por Defecto
+## Credenciales de Administrador
 
-- **Email:** larryjanpier@gmail.com
-- **Contraseña:** 3202964025
-- **Rol:** Administrador
+El administrador solo se crea si defines estas variables antes del primer arranque:
 
-> **Importante:** Cambia las credenciales del administrador en producción editando la función `seed()` en `backend/server.py` antes del primer arranque.
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- (opcional) `ADMIN_NAME`
+
+
 
 ## Solución de Problemas
 

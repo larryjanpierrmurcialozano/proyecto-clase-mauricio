@@ -8,6 +8,7 @@ import uuid
 import datetime
 import re
 from sqlalchemy import text, inspect
+from sqlalchemy.engine.url import make_url
 from urllib.parse import quote_plus
 
 
@@ -18,6 +19,8 @@ UPLOADS_DIR = os.path.join(PROJECT_ROOT, 'uploads')
 if not os.path.exists(UPLOADS_DIR):
     os.makedirs(UPLOADS_DIR, exist_ok=True)
 DB_PATH = os.path.join(BASE_DIR, 'app.db')
+ALLOWED_UPLOAD_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+MAX_UPLOAD_BYTES = int(os.getenv('UPLOAD_MAX_BYTES', '5242880'))
 
 
 def build_database_url():
@@ -32,19 +35,22 @@ def build_database_url():
     db_driver = os.getenv('DB_DRIVER', 'mysql').lower().strip()
 # todo esto debe estar configurado para los datos del usuario que inicia el servidor y en como
 # tenga configurado su mysql y usuarios de mysql
-    if db_driver == 'mysql':
-        user = os.getenv('MYSQL_USER', 'root').strip()
-        password = os.getenv('MYSQL_PASSWORD', '3202964025larry.').strip()
-        host = os.getenv('MYSQL_HOST', '127.0.0.1').strip()
-        port = os.getenv('MYSQL_PORT', '3306').strip()
-        database = os.getenv('MYSQL_DB', 'mauricio').strip()
-        safe_password = quote_plus(password) if password else ''
-        if safe_password:
-            auth = f"{user}:{safe_password}"
-        else:
-            auth = f"{user}"
-        return f"mysql+pymysql://{auth}@{host}:{port}/{database}?charset=utf8mb4"
-    return 'sqlite:///' + DB_PATH
+    if db_driver != 'mysql':
+        raise RuntimeError('DB_DRIVER debe ser mysql o configurar DATABASE_URL')
+
+    user = os.getenv('MYSQL_USER', 'root').strip()
+    password = os.getenv('MYSQL_PASSWORD', '3202964025larry.').strip()
+    host = os.getenv('MYSQL_HOST', '127.0.0.1').strip()
+    port = os.getenv('MYSQL_PORT', '3306').strip()
+    database = os.getenv('MYSQL_DB', 'mauricio').strip()
+    if not user or not host or not port or not database:
+        raise RuntimeError('Faltan variables MYSQL_* para conectar a MySQL')
+    safe_password = quote_plus(password) if password else ''
+    if safe_password:
+        auth = f"{user}:{safe_password}"
+    else:
+        auth = f"{user}"
+    return f"mysql+pymysql://{auth}@{host}:{port}/{database}?charset=utf8mb4"
 
 
 app = Flask(__name__, static_folder=FRONTEND_DIR)
@@ -55,6 +61,35 @@ if DB_URL.startswith('mysql'):
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+
+def get_db_status():
+    info = {
+        'ok': False,
+        'dialect': None,
+        'driver': None,
+        'database': None,
+        'host': None,
+        'port': None,
+        'error': None
+    }
+    try:
+        url_obj = make_url(DB_URL)
+        info['driver'] = url_obj.drivername
+        info['database'] = url_obj.database
+        info['host'] = url_obj.host
+        info['port'] = url_obj.port
+    except Exception as exc:
+        info['error'] = str(exc)
+
+    try:
+        info['dialect'] = db.engine.dialect.name
+        with db.engine.connect() as conn:
+            conn.execute(text('SELECT 1'))
+        info['ok'] = True
+    except Exception as exc:
+        info['error'] = str(exc)
+    return info
 
 
 # --------------- MODELOS ---------------
@@ -96,10 +131,19 @@ class Reservation(db.Model):
     condition_at_loan = db.Column(db.String(50), nullable=True)  # estado al prestar
 
     def to_dict(self):
+        end_date = parse_simple_date(self.end_date)
+        today = datetime.date.today()
+        status = 'activo'
+        if end_date and end_date < today:
+            status = 'en_devolucion'
+        due_days = None
+        if end_date:
+            due_days = (end_date - today).days
         return {'id': self.id, 'item_id': self.item_id, 'client': self.client,
                 'document': self.document, 'phone': self.phone,
                 'start_date': self.start_date, 'end_date': self.end_date,
-                'price': self.price, 'condition_at_loan': self.condition_at_loan}
+                'price': self.price, 'condition_at_loan': self.condition_at_loan,
+                'status': status, 'due_days': due_days}
 
 
 class Ticket(db.Model):
@@ -146,6 +190,41 @@ def get_table_columns(table_name):
     return {col['name'] for col in inspector.get_columns(table_name)}
 
 
+def parse_simple_date(value):
+    if not value:
+        return None
+    if isinstance(value, datetime.date):
+        return value
+    if isinstance(value, datetime.datetime):
+        return value.date()
+    if isinstance(value, str):
+        try:
+            return datetime.date.fromisoformat(value.strip())
+        except Exception:
+            return None
+    return None
+
+
+def parse_rental_description(description):
+    result = {'document': None, 'phone': None, 'start_date': None, 'end_date': None}
+    if not description:
+        return result
+    doc_match = re.search(r'Doc:\s*([^|]+)', description)
+    if doc_match:
+        result['document'] = doc_match.group(1).strip()
+    phone_match = re.search(r'Tel:\s*([^|]+)', description)
+    if phone_match:
+        result['phone'] = phone_match.group(1).strip()
+    dates_match = re.search(r'Fechas:\s*([^|]+)', description)
+    if dates_match:
+        dates_part = dates_match.group(1).strip()
+        if ' a ' in dates_part:
+            start_date, end_date = dates_part.split(' a ', 1)
+            result['start_date'] = start_date.strip()
+            result['end_date'] = end_date.strip()
+    return result
+
+
 def ensure_db():
     with app.app_context():
         db.create_all()
@@ -184,11 +263,13 @@ def ensure_db():
 
 def seed():
     # crea usuario administrador con credenciales proporcionadas por el usuario
-    admin_email = 'larryjanpier@gmail.com'
-    admin_pass = '3202964025'
-    if not User.query.filter_by(email=admin_email).first():
-        u = User(name='Larry', email=admin_email, password_hash=generate_password_hash(admin_pass), role='administrador')
-        db.session.add(u)
+    admin_email = os.getenv('ADMIN_EMAIL', '').strip()
+    admin_pass = os.getenv('ADMIN_PASSWORD', '').strip()
+    admin_name = os.getenv('ADMIN_NAME', 'Admin').strip() or 'Admin'
+    if admin_email and admin_pass:
+        if not User.query.filter_by(email=admin_email).first():
+            u = User(name=admin_name, email=admin_email, password_hash=generate_password_hash(admin_pass), role='administrador')
+            db.session.add(u)
     # sólo insertar artículos demo si la tabla de items está vacía
     cnt = 0
     try:
@@ -303,13 +384,22 @@ def ping():
     return jsonify({'status': 'ok', 'msg': 'pong'})
 
 
+@app.route('/api/db-status')
+@require_auth
+def api_db_status():
+    user = request.current_user
+    if user.role not in ('administrador', 'empleado'):
+        return jsonify({'ok': False, 'msg': 'Permisos insuficientes'}), 403
+    return jsonify(get_db_status())
+
+
 @app.route('/api/register', methods=['POST'])
 def api_register():
     data = request.json or {}
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role', 'cliente')
+    role = 'cliente'
     if not name or not email or not password:
         return jsonify({'ok': False, 'msg': 'Campos incompletos'}), 400
     if User.query.filter_by(email=email).first():
@@ -386,17 +476,24 @@ def api_add_item():
 
 
 @app.route('/api/upload', methods=['POST'])
+@require_auth
 def api_upload():
     if 'file' not in request.files:
         return jsonify({'ok': False, 'msg': 'No hay archivo'}), 400
     f = request.files['file']
     if f.filename == '':
         return jsonify({'ok': False, 'msg': 'No se seleccionó archivo'}), 400
+    if request.content_length and request.content_length > MAX_UPLOAD_BYTES:
+        return jsonify({'ok': False, 'msg': 'Archivo demasiado grande'}), 400
     filename = secure_filename(f.filename)
-    dest = os.path.join(UPLOADS_DIR, filename)
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        return jsonify({'ok': False, 'msg': 'Formato de archivo no permitido'}), 400
+    safe_name = uuid.uuid4().hex + ext
+    dest = os.path.join(UPLOADS_DIR, safe_name)
     f.save(dest)
     # devolver una ruta relativa a la raíz del servidor
-    url = '/uploads/' + filename
+    url = '/uploads/' + safe_name
     return jsonify({'ok': True, 'url': url})
 
 
@@ -416,9 +513,10 @@ def api_update_item_status(item_id):
     if user.role not in ('administrador','empleado'):
         return jsonify({'ok': False, 'msg': 'Permisos insuficientes'}), 403
     data = request.json or {}
-    status = data.get('status')
-    if not status:
-        return jsonify({'ok': False, 'msg': 'Status requerido'}), 400
+    status = (data.get('status') or '').strip()
+    allowed_status = ('disponible', 'mantenimiento')
+    if status not in allowed_status:
+        return jsonify({'ok': False, 'msg': 'Status invalido'}), 400
     it = Item.query.get(item_id)
     if not it:
         return jsonify({'ok': False, 'msg': 'Artículo no encontrado'}), 404
@@ -447,6 +545,10 @@ def api_loan():
     it = Item.query.get(item_id)
     if not it:
         return jsonify({'ok': False, 'msg': 'Artículo no encontrado'}), 404
+    if it.status != 'disponible':
+        return jsonify({'ok': False, 'msg': 'Artículo no disponible'}), 400
+    if Reservation.query.filter_by(item_id=item_id).first():
+        return jsonify({'ok': False, 'msg': 'Artículo ya reservado'}), 400
     if raw_price is None or str(raw_price).strip() == '':
         price = it.price if it.price else 10000
     else:
@@ -585,17 +687,38 @@ def api_return():
     item_id = data.get('itemId')
     condition_after = (data.get('condition') or 'bueno').strip()
     description = (data.get('description') or '').strip()
+    force_return = str(data.get('force_return', '')).lower() in ('1', 'true', 'si', 'yes')
+    force_reason = (data.get('force_reason') or '').strip()
     it = Item.query.get(item_id)
     if not it:
         return jsonify({'ok': False, 'msg': 'Artículo no encontrado'}), 404
+    reservation = Reservation.query.filter_by(item_id=item_id).first()
+    if reservation:
+        end_date = parse_simple_date(reservation.end_date)
+        today = datetime.date.today()
+        if end_date and today <= end_date and not force_return:
+            return jsonify({'ok': False, 'msg': 'El producto aun no esta en devolucion'}), 400
+        if end_date and today <= end_date and force_return:
+            user = request.current_user
+            if user.role not in ('administrador', 'empleado'):
+                return jsonify({'ok': False, 'msg': 'Permisos insuficientes'}), 403
     allowed = ('bueno', 'regular', 'deterioro')
     if condition_after not in allowed:
         condition_after = 'bueno'
     condition_before = it.condition or 'bueno'
     it.status = 'disponible'
     it.condition = condition_after
+    if force_return:
+        extra = 'Devolucion anticipada'
+        if force_reason:
+            extra += ' | Motivo: ' + force_reason
+        if description:
+            description = description + ' | ' + extra
+        else:
+            description = extra
     # crear ticket de devolución
     user = request.current_user
+    created_by = user.email or user.name
     ticket = Ticket(
         item_id=item_id,
         ticket_type='devolucion',
@@ -603,7 +726,7 @@ def api_return():
         condition_before=condition_before,
         condition_after=condition_after,
         status='abierto',
-        created_by=user.name
+        created_by=created_by
     )
     db.session.add(ticket)
     Reservation.query.filter_by(item_id=item_id).delete()
@@ -655,7 +778,10 @@ def api_update_item_condition(item_id):
 @require_auth
 def api_tickets():
     status_filter = request.args.get('status', '')
+    include_rentals = request.args.get('include_rentals', '0') == '1'
     q = Ticket.query.order_by(Ticket.created_at.desc())
+    if not include_rentals:
+        q = q.filter(Ticket.ticket_type != 'alquiler')
     if status_filter and status_filter in ('abierto', 'en_proceso', 'cerrado'):
         q = q.filter_by(status=status_filter)
     tickets = q.all()
@@ -679,6 +805,7 @@ def api_create_ticket():
         return jsonify({'ok': False, 'msg': 'Artículo no encontrado'}), 404
     if ticket_type not in ('devolucion', 'incidencia', 'mantenimiento', 'alquiler'):
         ticket_type = 'incidencia'
+    created_by = user.email or user.name
     ticket = Ticket(
         item_id=item_id,
         ticket_type=ticket_type,
@@ -686,7 +813,7 @@ def api_create_ticket():
         condition_before=condition_before or it.condition,
         condition_after=condition_after or it.condition,
         status='abierto',
-        created_by=user.name
+        created_by=created_by
     )
     db.session.add(ticket)
     db.session.commit()
@@ -786,6 +913,7 @@ def api_rental_request():
     description += ' | Fechas: ' + start_date + ' a ' + end_date
     if notes:
         description += ' | Notas: ' + notes
+    created_by = user.email or user.name
     ticket = Ticket(
         item_id=item_id,
         ticket_type='alquiler',
@@ -793,9 +921,78 @@ def api_rental_request():
         condition_before=it.condition or 'bueno',
         condition_after=it.condition or 'bueno',
         status='abierto',
-        created_by=user.name
+        created_by=created_by
     )
     db.session.add(ticket)
+    db.session.commit()
+    return jsonify({'ok': True, 'ticket': ticket.to_dict()})
+
+
+@app.route('/api/rental-approve/<int:ticket_id>', methods=['POST'])
+@require_auth
+def api_rental_approve(ticket_id):
+    user = request.current_user
+    if user.role not in ('administrador', 'empleado'):
+        return jsonify({'ok': False, 'msg': 'Permisos insuficientes'}), 403
+
+    ticket = Ticket.query.get(ticket_id)
+    if not ticket or ticket.ticket_type != 'alquiler':
+        return jsonify({'ok': False, 'msg': 'Solicitud no encontrada'}), 404
+    if ticket.status == 'cerrado':
+        return jsonify({'ok': False, 'msg': 'Solicitud ya cerrada'}), 400
+
+    item = Item.query.get(ticket.item_id)
+    if not item:
+        return jsonify({'ok': False, 'msg': 'Artículo no encontrado'}), 404
+    if item.status != 'disponible':
+        return jsonify({'ok': False, 'msg': 'Artículo no disponible'}), 400
+    if Reservation.query.filter_by(item_id=item.id).first():
+        return jsonify({'ok': False, 'msg': 'Artículo ya reservado'}), 400
+
+    details = parse_rental_description(ticket.description or '')
+    start_date = details.get('start_date') or ''
+    end_date = details.get('end_date') or ''
+    if not start_date or not end_date:
+        return jsonify({'ok': False, 'msg': 'Fechas no encontradas en la solicitud'}), 400
+
+    client_name = ticket.created_by or 'Cliente'
+    reservation = Reservation(
+        item_id=item.id,
+        client=client_name,
+        document=details.get('document') or None,
+        phone=details.get('phone') or None,
+        start_date=start_date,
+        end_date=end_date,
+        price=item.price if item.price else 10000,
+        condition_at_loan=item.condition or 'bueno'
+    )
+    item.status = 'alquilado'
+    base_desc = ticket.description or 'Solicitud de alquiler'
+    ticket.description = base_desc + ' | Aprobado por ' + user.name
+    ticket.status = 'en_proceso'
+
+    db.session.add(reservation)
+    db.session.commit()
+    return jsonify({'ok': True, 'reservation': reservation.to_dict(), 'ticket': ticket.to_dict()})
+
+
+@app.route('/api/rental-reject/<int:ticket_id>', methods=['POST'])
+@require_auth
+def api_rental_reject(ticket_id):
+    user = request.current_user
+    if user.role not in ('administrador', 'empleado'):
+        return jsonify({'ok': False, 'msg': 'Permisos insuficientes'}), 403
+
+    ticket = Ticket.query.get(ticket_id)
+    if not ticket or ticket.ticket_type != 'alquiler':
+        return jsonify({'ok': False, 'msg': 'Solicitud no encontrada'}), 404
+    if ticket.status == 'cerrado':
+        return jsonify({'ok': False, 'msg': 'Solicitud ya cerrada'}), 400
+
+    base_desc = ticket.description or 'Solicitud de alquiler'
+    ticket.description = base_desc + ' | Rechazado por ' + user.name
+    ticket.status = 'cerrado'
+    ticket.resolved_at = datetime.datetime.utcnow()
     db.session.commit()
     return jsonify({'ok': True, 'ticket': ticket.to_dict()})
 
@@ -805,7 +1002,8 @@ def api_rental_request():
 def api_my_tickets():
     """Return tickets created by the current user."""
     user = request.current_user
-    tickets = Ticket.query.filter_by(created_by=user.name).order_by(Ticket.created_at.desc()).all()
+    identities = [x for x in [user.email, user.name] if x]
+    tickets = Ticket.query.filter(Ticket.created_by.in_(identities)).order_by(Ticket.created_at.desc()).all()
     return jsonify([t.to_dict() for t in tickets])
 
 
@@ -814,7 +1012,8 @@ def api_my_tickets():
 def api_my_rentals():
     """Return rental info for the current user based on their alquiler tickets."""
     user = request.current_user
-    tickets = Ticket.query.filter_by(created_by=user.name, ticket_type='alquiler').order_by(Ticket.created_at.desc()).all()
+    identities = [x for x in [user.email, user.name] if x]
+    tickets = Ticket.query.filter(Ticket.created_by.in_(identities), Ticket.ticket_type == 'alquiler').order_by(Ticket.created_at.desc()).all()
     result = []
     for t in tickets:
         item = Item.query.get(t.item_id)
@@ -854,4 +1053,12 @@ if __name__ == '__main__':
         ensure_db()
     except Exception as e:
         print('Advertencia: fallo al asegurar/actualizar la BD:', e)
-    app.run(debug=True, port=5000)
+    try:
+        status = get_db_status()
+        print('DB status:', status.get('dialect'), status.get('database'), status.get('host'), status.get('ok'))
+        if not status.get('ok'):
+            print('DB error:', status.get('error'))
+    except Exception as e:
+        print('DB check fallo:', e)
+    debug_enabled = os.getenv('FLASK_DEBUG', '0') == '1'
+    app.run(debug=debug_enabled, port=5000)

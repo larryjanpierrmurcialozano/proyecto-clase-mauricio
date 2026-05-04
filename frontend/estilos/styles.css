@@ -636,6 +636,7 @@ body.dark .stat-value { color: #fff; }
 
 /* -- Row -------------------------------------------- */
 .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.row.spaced { margin-top: 16px; }
 
 /* -- Scrollbar ---------------------------------------- */
 ::-webkit-scrollbar { width: 8px; }
@@ -902,6 +903,59 @@ body.dark .ticket-status-cerrado { background: rgba(16,185,129,0.15); color: #34
 .ticket-row-meta { display: flex; gap: 16px; font-size: 0.82rem; color: var(--muted); }
 .ticket-row-meta i { width: 16px; text-align: center; margin-right: 2px; }
 .ticket-row-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+
+.loan-section-title {
+  margin: 8px 0 10px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.loan-request-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.loan-request-status,
+.loan-request-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-alt);
+}
+
+.approve-rental-btn {
+  background: linear-gradient(135deg, var(--success), #059669);
+  color: #fff;
+  border: none;
+}
+
+.approve-rental-btn:hover { filter: brightness(1.05); }
+
+.loan-request-msg {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.loan-request-msg.error { color: var(--danger); }
+
+.loan-actions-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.loan-due { color: var(--muted); }
+.loan-due.due-warning { color: var(--warning); }
+.loan-due.due-danger { color: var(--danger); }
 
 /* -- Responsive: Inventory rows & Loans ------------------- */
 @media (max-width: 768px) {
