@@ -189,7 +189,7 @@ async function refreshData(){
   try{
     const inv = await api('/api/inventory')
     const resv = await api('/api/reservations')
-    const tix = await api('/api/tickets')
+    const tix = await api('/api/tickets?include_rentals=1')
     state.inventory = Array.isArray(inv)? inv : []
     state.reservations = Array.isArray(resv)? resv : []
     state.tickets = Array.isArray(tix)? tix : []
